@@ -79,6 +79,14 @@ def cvDrawBoxes(detections, img, mask_wt_path = "/content/drive/My Drive/equalaf
         yCoord = int(y - h/2)
         xi, yi, wi, hi = int(xCoord), int(yCoord), int(w), int(h)
         print(xi, yi, wi, hi)
+        if (xi<0 or yi<0):
+            xi = 0
+            yi = 0
+            if xi<0:
+                wi = wi + xi
+            if yi<0:
+                hi = hi + yi
+            
         detect_mask_img = detect_mask_img[yi:yi+hi, xi:xi+wi]
         #io.imshow(detect_mask_img)
         #io.show()
