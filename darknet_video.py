@@ -59,6 +59,8 @@ font=cv2.FONT_HERSHEY_COMPLEX
 def cvDrawBoxes(detections, img, mask_wt_path = "/content/drive/My Drive/equalaf4.pth"):
     load_mask_wt(mask_wt_path)
     mask_model.eval()
+    final_img = img
+    
     for detection in detections:
         x, y, w, h = detection[2][0],\
             detection[2][1],\
@@ -71,6 +73,7 @@ def cvDrawBoxes(detections, img, mask_wt_path = "/content/drive/My Drive/equalaf
         pt2 = (xmax, ymax)
         
         ################################################################
+        
         detect_mask_img = img
         xCoord = int(x - w/2)
         yCoord = int(y - h/2)
@@ -106,13 +109,13 @@ def cvDrawBoxes(detections, img, mask_wt_path = "/content/drive/My Drive/equalaf
                   boxColor = green'''
         
         if prediction == 0:
-            cv2.putText(img, "No Mask", (xi,yi - 10), font, font_scale, red, thickness)
+            cv2.putText(final_img, "No Mask", (xi,yi - 10), font, font_scale, red, thickness)
             boxColor = red
         elif prediction == 1:
-            cv2.putText(img, "Mask", (xi,yi - 10), font, font_scale, green, thickness)
+            cv2.putText(final_img, "Mask", (xi,yi - 10), font, font_scale, green, thickness)
             boxColor = green
         print("prediction : " + str(prediction))
-        cv2.rectangle(img, pt1, pt2, boxColor, 1)
+        cv2.rectangle(final_img, pt1, pt2, boxColor, 1)
         '''cv2.putText(img,
                     detection[0].decode() +
                     " [" + str(round(detection[1] * 100, 2)) + "]",
@@ -120,7 +123,7 @@ def cvDrawBoxes(detections, img, mask_wt_path = "/content/drive/My Drive/equalaf
                     [0, 255, 0], 2)'''
         
         ################################################################
-    return img
+    return final_img
 
 
 netMain = None
@@ -173,7 +176,7 @@ def YOLO(video_path = '/content/mask_footage.mp4', configPath = "cfg/custom-yolo
     cap.set(3, 1280)
     cap.set(4, 720)
     out = cv2.VideoWriter(
-        "output.avi", cv2.VideoWriter_fourcc(*"MJPG"), 10.0,
+        "output.avi", cv2.VideoWriter_fourcc(*"MJPG"), 27.0,
         (darknet.network_width(netMain), darknet.network_height(netMain)))
     print("Starting the YOLO loop...")
 
