@@ -487,7 +487,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                   y = 0
                   if x<0:
                       w = w + x
-                  if yi<0:
+                  if y<0:
                       h = h + y
                       
                 detect_mask_img = temp_img
