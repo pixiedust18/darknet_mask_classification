@@ -195,7 +195,7 @@ def YOLO(video_path = '/content/mask_footage.mp4', configPath = "cfg/custom-yolo
     total_time = 0
     while True:
         try:
-            frame += 1
+            frame_no += 1
             prev_time = time.time()
             ret, frame_read = cap.read()
             frame_rgb = cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB)
