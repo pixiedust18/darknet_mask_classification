@@ -449,6 +449,8 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
             from skimage import io, draw
             import numpy as np
             image = io.imread(imagePath)
+            temp_img = image
+
             print("*** "+str(len(detections))+" Results, color coded by confidence ***")
             imcaption = []
             for detection in detections:
@@ -479,7 +481,8 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
 
                 x, y, w, h = xCoord, yCoord, int(bounds[2]), int(bounds[3])
                 print(x, y, w, h)
-                detect_mask_img = image
+                
+                detect_mask_img = temp_img
                 detect_mask_img = detect_mask_img[y:y+h, x:x+w]
                 pil_image = Image.fromarray(detect_mask_img, mode = "RGB")
                 pil_image = train_transforms(pil_image)
