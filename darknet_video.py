@@ -28,6 +28,9 @@ def convertBack(x, y, w, h):
     return xmin, ymin, xmax, ymax
 
 ################################################
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using", device)
+
 mask_model = models.resnet50(pretrained=True)
 mask_model.fc = torch.nn.Sequential(torch.nn.Linear(2048, 1024),
                                  torch.nn.BatchNorm1d(1024),
@@ -94,8 +97,13 @@ def cvDrawBoxes(detections, img, mask_wt_path = "/content/drive/My Drive/equalaf
         pil_image = train_transforms(pil_image)
         img_modif = pil_image.unsqueeze(0)
                             
-        print("accessing mask model")            
-        result = mask_model(img_modif)
+        print("accessing mask model") 
+        
+        if device=="cuda":
+            result = mask_model(img_modif.cuda())
+        else:
+            result = mask_model(img_modif)
+            
         _, maximum = torch.max(result.data, 1)
         prediction = maximum.item()
        
