@@ -191,8 +191,11 @@ def YOLO(video_path = '/content/mask_footage.mp4', configPath = "cfg/custom-yolo
     # Create an image we reuse for each detect
     darknet_image = darknet.make_image(darknet.network_width(netMain),
                                     darknet.network_height(netMain),3)
+    frame_no = 0
+    total_time = 0
     while True:
         try:
+            frame += 1
             prev_time = time.time()
             ret, frame_read = cap.read()
             frame_rgb = cv2.cvtColor(frame_read, cv2.COLOR_BGR2RGB)
@@ -209,11 +212,14 @@ def YOLO(video_path = '/content/mask_footage.mp4', configPath = "cfg/custom-yolo
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             out.write(image)
             print(1/(time.time()-prev_time))
+            total_time += time.time()-prev_time
             #io.imshow(image)
             #io.show()
             cv2.waitKey(3)
         except:
             break;
+    fps = frame_no / total_time
+    print("FPS = ", fps)
       
     cap.release()
     out.release()
