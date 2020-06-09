@@ -482,6 +482,14 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 x, y, w, h = xCoord, yCoord, int(bounds[2]), int(bounds[3])
                 print(x, y, w, h)
                 
+                if (x<0 or y<0):
+                  x = 0
+                  y = 0
+                  if x<0:
+                      w = w + x
+                  if yi<0:
+                      h = h + y
+                      
                 detect_mask_img = temp_img
                 detect_mask_img = detect_mask_img[y:y+h, x:x+w]
                 pil_image = Image.fromarray(detect_mask_img, mode = "RGB")
