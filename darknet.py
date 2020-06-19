@@ -486,7 +486,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 pil_image = Image.fromarray(detect_mask_img, mode = "RGB")
                 pil_image = train_transforms(pil_image)
                 img = pil_image.unsqueeze(0)
-                result.append(np.expand_dims(np.asarray(img)/256.0, 0))
+                result.append(img)
                 BATCH_SIZE += 1
                 predic.append(0)
                
@@ -503,7 +503,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
             prediction_list = []
             with torch.no_grad():
                 for X, y in test_loader:
-                    X, y = X.cuda(), y.cuda()
+                    X, y = X.cuda().float(), y.cuda()
                     result = mask_model(X)
                     _, maximum = torch.max(result.data, 1)
                     prediction_list = maximum.list()
