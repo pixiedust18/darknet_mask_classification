@@ -65,6 +65,7 @@ def cvDrawBoxes(detections, img, mask_wt_path = "/content/drive/My Drive/equalaf
     load_mask_wt(mask_wt_path)
     mask_model.eval()
     BATCH_SIZE = 0
+    result = []
     ################################################################
     for detection in detections:
         x, y, w, h = detection[2][0], detection[2][1], detection[2][2], detection[2][3]
@@ -103,11 +104,11 @@ def cvDrawBoxes(detections, img, mask_wt_path = "/content/drive/My Drive/equalaf
         for X in test_loader:
                     #X = X.cuda()
             if device=="cuda":
-                result = mask_model(X.cuda())
+                ans = mask_model(X.cuda())
             else:
-                result = mask_model(X)
+                ans = mask_model(X)
             print("make prediction")
-            _, maximum = torch.max(result.data, 1)
+            _, maximum = torch.max(ans.data, 1)
             print(maximum.tolist())
             prediction_list = maximum.tolist()
     print("predictions: ", prediction_list)       
