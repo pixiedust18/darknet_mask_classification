@@ -108,10 +108,7 @@ def cvDrawBoxes(detections, img, mask_wt_path = "/content/drive/My Drive/equalaf
             _, maximum = torch.max(result.data, 1)
             print(maximum.tolist())
             prediction_list = maximum.tolist()
-                    
-                           
-                    
-     print("predictions: ", prediction_list)       
+    print("predictions: ", prediction_list)       
         
     #-----------------------------------------------------    
     i=0
