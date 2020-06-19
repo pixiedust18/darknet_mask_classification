@@ -62,20 +62,15 @@ font=cv2.FONT_HERSHEY_COMPLEX
 def cvDrawBoxes(detections, img, mask_wt_path = "/content/drive/My Drive/equalaf4.pth"):
     load_mask_wt(mask_wt_path)
     mask_model.eval()
-    final_img = img
-    
+    BATCH_SIZE = 0
+    ################################################################
     for detection in detections:
-        x, y, w, h = detection[2][0],\
-            detection[2][1],\
-            detection[2][2],\
-            detection[2][3]
+        x, y, w, h = detection[2][0], detection[2][1], detection[2][2], detection[2][3]
         xmin, ymin, xmax, ymax = convertBack(
             float(x), float(y), float(w), float(h))
         
         pt1 = (xmin, ymin)
         pt2 = (xmax, ymax)
-        
-        ################################################################
         
         detect_mask_img = img
         xCoord = int(x - w/2)
@@ -89,58 +84,75 @@ def cvDrawBoxes(detections, img, mask_wt_path = "/content/drive/My Drive/equalaf
                 wi = wi + xi
             if yi<0:
                 hi = hi + yi
-            
+        
         detect_mask_img = detect_mask_img[yi:yi+hi, xi:xi+wi]
-        #io.imshow(detect_mask_img)
-        #io.show()
-        pil_image = Image.fromarray(detect_mask_img, mode = "RGB")
-        pil_image = train_transforms(pil_image)
-        img_modif = pil_image.unsqueeze(0)
+        result.append(detect_mask_img)
+        BATCH_SIZE += 1
+    #--------------------------------------------------
+    comp = Image_Dataset(result, transform=train_transforms)
+    test_loader = torch.utils.data.DataLoader(comp,
+                            batch_size=BATCH_SIZE,
+                                shuffle=False)
+
+    print("accessing mask model")     
+    prediction_list = []
+    with torch.no_grad():
+        print("load tl")
+            for X in test_loader:
+                    #X = X.cuda()
+                if device=="cuda":
+                    result = mask_model(X.cuda())
+                else:
+                    result = mask_model(X)
+                print("make prediction")
+                _, maximum = torch.max(result.data, 1)
+                print(maximum.tolist())
+                prediction_list = maximum.tolist()
+                    
                             
-        print("accessing mask model") 
+                print("predictions: ", prediction_list)       
         
-        if device=="cuda":
-            result = mask_model(img_modif.cuda())
-        else:
-            result = mask_model(img_modif)
-            
-        _, maximum = torch.max(result.data, 1)
-        prediction = maximum.item()
-       
-        '''if prediction == 0:
-                  if mask_present_label == True:
-                    cv2.putText(img, "No Mask", (x,y - 10), font, font_scale, red, thickness)
-                    print("Label print", mask_present_label)
-                  else:
-                    print("Label print", mask_present_label)
-                  print("No mask")
-            boxColor = red
-        elif prediction == 1:
-                  if mask_present_label == True:
-                    cv2.putText(img, "Mask", (x,y - 10), font, font_scale, green, thickness)
-                    print("Label print", mask_present_label)
-                  else:
-                    print("Label print", mask_present_label)
-                  print("Mask")
-                  boxColor = green'''
+    #-----------------------------------------------------    
+    i=0
+    for detection in detections:
+        x, y, w, h = detection[2][0],\
+            detection[2][1],\
+            detection[2][2],\
+            detection[2][3]
+        xmin, ymin, xmax, ymax = convertBack(
+            float(x), float(y), float(w), float(h))
         
+        pt1 = (xmin, ymin)
+        pt2 = (xmax, ymax)
+        
+        detect_mask_img = img
+        xCoord = int(x - w/2)
+        yCoord = int(y - h/2)
+        xi, yi, wi, hi = int(xCoord), int(yCoord), int(w), int(h)
+        print(xi, yi, wi, hi)
+
+        if (xi<0 or yi<0):
+            xi = 0
+            yi = 0
+            if xi<0:
+                wi = wi + xi
+            if yi<0:
+                hi = hi + yi
+        
+        prediction = prediction_list[i]
+
         if prediction == 0:
-            cv2.putText(final_img, "No Mask", (xi,yi - 10), font, font_scale, red, thickness)
+            cv2.putText(img, "No Mask", (xi,yi - 10), font, font_scale, red, thickness)
             boxColor = red
         elif prediction == 1:
-            cv2.putText(final_img, "Mask", (xi,yi - 10), font, font_scale, green, thickness)
+            cv2.putText(img, "Mask", (xi,yi - 10), font, font_scale, green, thickness)
             boxColor = green
         print("prediction : " + str(prediction))
-        cv2.rectangle(final_img, pt1, pt2, boxColor, 1)
-        '''cv2.putText(img,
-                    detection[0].decode() +
-                    " [" + str(round(detection[1] * 100, 2)) + "]",
-                    (pt1[0], pt1[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                    [0, 255, 0], 2)'''
+        cv2.rectangle(img, pt1, pt2, boxColor, 1)
+        i+=1
         
         ################################################################
-    return final_img
-
+    return img
 
 netMain = None
 metaMain = None
