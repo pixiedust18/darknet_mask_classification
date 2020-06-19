@@ -489,7 +489,10 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 BATCH_SIZE += 1
                 predic.append(0)
             #---------------------------------------------
+            print("img")
             imgs = torch.from_numpy(np.asarray(result, dtype=np.float32))
+            print("predic")
+            predic = torch.from_numpy(np.asarray(predic, dtype=np.float32))
             comp = TensorDataset(imgs, predic)
             test_loader = torch.utils.data.DataLoader(comp,
                                           batch_size=BATCH_SIZE,
