@@ -502,7 +502,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                     _, maximum = torch.max(result.data, 1)
                     prediction_list = maximum.list()
                 print("accessing mask model")            
-                
+                print("predictions: ", prediction_list)
             #----------------------------------------------------    
             i=0
             for detection in detections:
