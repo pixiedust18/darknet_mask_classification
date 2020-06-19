@@ -19,7 +19,23 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from skimage import io, draw
 
+###################################################
+class Image_Dataset(data.Dataset):
+    
+    def __init__(self, image_list, transform=None):    
+        self.image_list = image_list
+        self.transform = transform
+        
+    def __len__(self):
+        return len(self.image_list)
+    
+    def __getitem__(self, idx):
+        image = self.image_list[idx]
+        pil_image = Image.fromarray(image, mode = "RGB")
+        img_transformed = self.transform(pil_image)
 
+        return img_transformed
+####################################################
 def convertBack(x, y, w, h):
     xmin = int(round(x - (w / 2)))
     xmax = int(round(x + (w / 2)))
