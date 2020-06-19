@@ -564,7 +564,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                     print("Label print", mask_present_label)
                   print("Mask")
                   boxColor = green
-
+                i+=1
                 ####################################################
              
                 boundingBox = [
