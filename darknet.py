@@ -42,7 +42,7 @@ import torch.optim as optim
 import torchvision.models as models
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-from torch.utils.data import DataLoader
+from torch.utils.data import TensorDataset, DataLoader
 import torch.utils.data as data
 import matplotlib.pyplot as plt
 
@@ -63,7 +63,8 @@ train_transforms = transforms.Compose([
     transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))
     ])
 
-
+def load_mask_wt(path = '/content/drive/My Drive/equalaf4.pth'):
+    mask_model.load_state_dict(torch.load(path))
     
 def sample(probs):
     s = sum(probs)
@@ -347,9 +348,6 @@ netMain = None
 metaMain = None
 altNames = None
 
-def load_mask_wt(path = '/content/drive/My Drive/equalaf4.pth'):
-    mask_model.load_state_dict(torch.load(path))
-    
 def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath = "yolov4.weights", metaPath= "./cfg/coco.data", showImage= True, makeImageOnly = False, initOnly= False, mask_present_label = True, mask_path = '/content/drive/My Drive/equalaf4.pth'):
     """
     Convenience function to handle the detection and returns of objects.
@@ -443,16 +441,17 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     #################################
     load_mask_wt(mask_path)
     mask_model.eval()
+    BATCH_SIZE = 0
+    predic = []
     #################################
     if showImage:
         try:
             from skimage import io, draw
             import numpy as np
             image = io.imread(imagePath)
-            temp_img = image
-
             print("*** "+str(len(detections))+" Results, color coded by confidence ***")
             imcaption = []
+            result = []
             for detection in detections:
                 label = detection[0]
                 confidence = detection[1]
@@ -481,26 +480,49 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
 
                 x, y, w, h = xCoord, yCoord, int(bounds[2]), int(bounds[3])
                 print(x, y, w, h)
-                
-                if (x<0 or y<0):
-                  x = 0
-                  y = 0
-                  if x<0:
-                      w = w + x
-                  if y<0:
-                      h = h + y
-                      
-                detect_mask_img = temp_img
+                detect_mask_img = image
                 detect_mask_img = detect_mask_img[y:y+h, x:x+w]
                 pil_image = Image.fromarray(detect_mask_img, mode = "RGB")
                 pil_image = train_transforms(pil_image)
                 img = pil_image.unsqueeze(0)
-                            
+                result.append(np.expand_dims(np.asarray(img)/256.0, 0))
+                BATCH_SIZE += 1
+                predic.append(0)
+            #---------------------------------------------
+            imgs = torch.from_numpy(np.asarray(result, dtype=np.float32))
+            comp = TensorDataset(imgs, predic)
+            test_loader = torch.utils.data.DataLoader(comp,
+                                          batch_size=BATCH_SIZE,
+                                          shuffle=False)
+            prediction_list = []
+            with torch.no_grad():
+                for X, y in test_loader:
+                    X, y = X.cuda(), y.cuda()
+                    result = model(X)
+                    _, maximum = torch.max(result.data, 1)
+                    prediction_list = maximum.list()
                 print("accessing mask model")            
-                result = mask_model(img)
-                _, maximum = torch.max(result.data, 1)
-                prediction = maximum.item()
-
+                
+            #----------------------------------------------------    
+            i=0
+            for detection in detections:
+                label = detection[0]
+                confidence = detection[1]
+                pstring = label+": "+str(np.rint(100 * confidence))+"%"
+                imcaption.append(pstring)
+                print(pstring)
+                bounds = detection[2]
+                shape = image.shape
+                # x = shape[1]
+                # xExtent = int(x * bounds[2] / 100)
+                # y = shape[0]
+                # yExtent = int(y * bounds[3] / 100)
+                yExtent = int(bounds[3])
+                xEntent = int(bounds[2])
+                # Coordinates are around the center
+                xCoord = int(bounds[0] - bounds[2]/2)
+                yCoord = int(bounds[1] - bounds[3]/2)
+                prediction = prediction_list[i]
                 
                 if prediction == 0:
                   if mask_present_label == True:
