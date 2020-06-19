@@ -119,10 +119,12 @@ def cvDrawBoxes(detections, img, mask_wt_path = "/content/drive/My Drive/equalaf
         print("load tl")
         for X in test_loader:
                     #X = X.cuda()
-            if device=="cuda":
+            print(device)
+            ans = mask_model(X.cuda())
+            '''if device=="cuda":
                 ans = mask_model(X.cuda())
             else:
-                ans = mask_model(X)
+                ans = mask_model(X)'''
             print("make prediction")
             _, maximum = torch.max(ans.data, 1)
             print(maximum.tolist())
