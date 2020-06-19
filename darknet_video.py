@@ -48,6 +48,8 @@ train_transforms = transforms.Compose([
     transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))
     ])
 
+model.to(device)
+
 def load_mask_wt(path = '/content/drive/My Drive/equalaf4.pth'):
     mask_model.load_state_dict(torch.load(path))
     
@@ -212,7 +214,7 @@ def YOLO(video_path = '/content/mask_footage.mp4', configPath = "cfg/custom-yolo
     frame_no = 0
     total_time = 0
     while True:
-        try:
+        #try:
             frame_no += 1
             prev_time = time.time()
             ret, frame_read = cap.read()
@@ -234,10 +236,11 @@ def YOLO(video_path = '/content/mask_footage.mp4', configPath = "cfg/custom-yolo
             #io.imshow(image)
             #io.show()
             cv2.waitKey(3)
-        except:
-            break;
-    fps = frame_no / total_time
-    print("FPS = ", fps)
+        #except:
+            #break;
+    if(total_time!=0):
+        fps = frame_no / total_time
+        print("FPS = ", fps)
       
     cap.release()
     out.release()
