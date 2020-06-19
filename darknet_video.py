@@ -48,7 +48,7 @@ train_transforms = transforms.Compose([
     transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))
     ])
 
-model.to(device)
+mask_model.to(device)
 
 def load_mask_wt(path = '/content/drive/My Drive/equalaf4.pth'):
     mask_model.load_state_dict(torch.load(path))
