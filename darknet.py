@@ -494,6 +494,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
             test_loader = torch.utils.data.DataLoader(comp,
                                           batch_size=BATCH_SIZE,
                                           shuffle=False)
+            print("accessing mask model")
             prediction_list = []
             with torch.no_grad():
                 for X, y in test_loader:
@@ -501,7 +502,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                     result = model(X)
                     _, maximum = torch.max(result.data, 1)
                     prediction_list = maximum.list()
-                print("accessing mask model")            
+                            
                 print("predictions: ", prediction_list)
             #----------------------------------------------------    
             i=0
@@ -523,7 +524,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 xCoord = int(bounds[0] - bounds[2]/2)
                 yCoord = int(bounds[1] - bounds[3]/2)
                 prediction = prediction_list[i]
-                
+                print("processing prediction")
                 if prediction == 0:
                   if mask_present_label == True:
                     cv2.putText(image, "No Mask", (x,y - 10), font, font_scale, red, thickness)
