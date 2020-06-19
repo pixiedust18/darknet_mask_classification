@@ -488,6 +488,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 result.append(np.expand_dims(np.asarray(img)/256.0, 0))
                 BATCH_SIZE += 1
                 predic.append(0)
+                print(BATCH_SIZE)
             #---------------------------------------------
             print("img")
             imgs = torch.from_numpy(np.asarray(result, dtype=np.float32))
