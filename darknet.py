@@ -62,6 +62,23 @@ train_transforms = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))
     ])
+###################################################
+class Image_Dataset(data.Dataset):
+    
+    def __init__(self, image_list, transform=None):    
+        self.image_list = image_list
+        self.transform = transform
+        
+    def __len__(self):
+        return len(self.image_list)
+    
+    def __getitem__(self, idx):
+        image = self.image_list[idx]
+        pil_image = Image.fromarray(image, mode = "RGB")
+        img_transformed = self.transform(pil_image)
+
+        return img_transformed
+####################################################
 
 def load_mask_wt(path = '/content/drive/My Drive/equalaf4.pth'):
     mask_model.load_state_dict(torch.load(path))
@@ -445,7 +462,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     predic = []
     #################################
     if showImage:
-        try:
+        #try:
             from skimage import io, draw
             import numpy as np
             image = io.imread(imagePath)
@@ -483,30 +500,31 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 print(x, y, w, h)
                 detect_mask_img = image
                 detect_mask_img = detect_mask_img[y:y+h, x:x+w]
-                pil_image = Image.fromarray(detect_mask_img, mode = "RGB")
-                pil_image = train_transforms(pil_image)
-                img = pil_image.unsqueeze(0)
-                result.append(img)
+                #pil_image = Image.fromarray(detect_mask_img, mode = "RGB")
+                #pil_image = train_transforms(pil_image)
+                #img = pil_image.unsqueeze(0)
+                result.append(detect_mask_img)
                 BATCH_SIZE += 1
                 predic.append(0)
                
             #---------------------------------------------
-            print("img")
-            imgs = torch.fromarray(result, dtype=np.float32))
-            print("predic")
-            predic = torch.from_numpy(np.asarray(predic, dtype=np.float32))
-            comp = TensorDataset(imgs, predic)
+            
+            comp = Image_Dataset(result, transform=train_transforms)
             test_loader = torch.utils.data.DataLoader(comp,
                                           batch_size=BATCH_SIZE,
                                           shuffle=False)
             print("accessing mask model")
             prediction_list = []
             with torch.no_grad():
-                for X, y in test_loader:
-                    X, y = X.cuda().float(), y.cuda()
+                print("load tl")
+                for X in test_loader:
+                    #X = X.cuda()
+                    print("make prediction")
                     result = mask_model(X)
                     _, maximum = torch.max(result.data, 1)
-                    prediction_list = maximum.list()
+                    print(maximum.tolist())
+                    prediction_list = maximum.tolist()
+                    
                             
                 print("predictions: ", prediction_list)
             #----------------------------------------------------    
@@ -576,8 +594,8 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 "image": image,
                 "caption": "\n<br/>".join(imcaption)
             }
-        except Exception as e:
-            print("Unable to show image: "+str(e))
+        #except Exception as e:
+        #    print("Unable to show image: "+str(e))
     return detections
 
 def performBatchDetect(thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath = "yolov4.weights", metaPath= "./cfg/coco.data", hier_thresh=.5, nms=.45, batch_size=3):
