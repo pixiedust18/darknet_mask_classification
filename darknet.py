@@ -504,7 +504,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
             with torch.no_grad():
                 for X, y in test_loader:
                     X, y = X.cuda(), y.cuda()
-                    result = model(X)
+                    result = mask_model(X)
                     _, maximum = torch.max(result.data, 1)
                     prediction_list = maximum.list()
                             
