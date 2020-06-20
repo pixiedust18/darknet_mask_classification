@@ -579,7 +579,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                     "classname" : prediction
                 }
                 op = pd.Series(op)
-                df.append(op, ignore_index=True)
+                df = df.append(op, ignore_index=True)
                 ####################################################
              
                 boundingBox = [
