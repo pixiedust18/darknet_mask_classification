@@ -578,6 +578,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                     "y2" : (y+h),
                     "classname" : prediction
                 }
+                op = pd.Series(op)
                 df.append(op, ignore_index=True)
                 ####################################################
              
@@ -681,5 +682,6 @@ def performBatchDetect(thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath
 
 if __name__ == "__main__":
     df = (performDetect())
+    print(df)
     #Uncomment the following line to see batch inference working 
     #print(performBatchDetect())
