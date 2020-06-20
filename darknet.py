@@ -456,10 +456,12 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     #detections = detect(netMain, metaMain, imagePath, thresh)	# if is used cv2.imread(image)
     detections = detect(netMain, metaMain, imagePath.encode("ascii"), thresh)
     #################################
+    import pandas as pd
     load_mask_wt(mask_path)
     mask_model.eval()
     BATCH_SIZE = 0
     predic = []
+    df = pd.dataframe(columns=['name', 'x1', 'x2', 'y1', 'y2', 'classname'])
     #################################
     if showImage:
         #try:
@@ -546,6 +548,8 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 # Coordinates are around the center
                 xCoord = int(bounds[0] - bounds[2]/2)
                 yCoord = int(bounds[1] - bounds[3]/2)
+                x, y, w, h = xCoord, yCoord, int(bounds[2]), int(bounds[3])
+
                 prediction = prediction_list[i]
                 print("processing prediction")
                 if prediction == 0:
@@ -565,6 +569,16 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                   print("Mask")
                   boxColor = green
                 i+=1
+                
+                op = {
+                    "name": imagePath,
+                    "x1": x,
+                    "x2" : (x+w),
+                    "y1" : y,
+                    "y2" : (y+h),
+                    "classname" : prediction
+                }
+                df.append(op)
                 ####################################################
              
                 boundingBox = [
@@ -589,14 +603,15 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 io.imsave(fname="/content/drive/My Drive/result.jpg", arr=image)
                 io.imshow(image)
                 io.show()
-            detections = {
+            '''detections = {
                 "detections": detections,
                 "image": image,
                 "caption": "\n<br/>".join(imcaption)
-            }
+            }'''
+            
         #except Exception as e:
         #    print("Unable to show image: "+str(e))
-    return detections
+    return df
 
 def performBatchDetect(thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath = "yolov4.weights", metaPath= "./cfg/coco.data", hier_thresh=.5, nms=.45, batch_size=3):
     import cv2
@@ -665,6 +680,7 @@ def performBatchDetect(thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath
     return batch_boxes, batch_scores, batch_classes    
 
 if __name__ == "__main__":
-    print(performDetect())
+    df = (performDetect())
+    return df
     #Uncomment the following line to see batch inference working 
     #print(performBatchDetect())
