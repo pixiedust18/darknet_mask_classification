@@ -497,9 +497,14 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 green = (0,255,0)
                 red = (255,0,0)
                 font=cv2.FONT_HERSHEY_COMPLEX
-
+              
+    
                 x, y, w, h = xCoord, yCoord, int(bounds[2]), int(bounds[3])
                 print(x, y, w, h)
+                if(x<0):
+                  x=0
+                if(y<0):
+                  y=0
                 detect_mask_img = image
                 detect_mask_img = detect_mask_img[y:y+h, x:x+w]
                 #pil_image = Image.fromarray(detect_mask_img, mode = "RGB")
