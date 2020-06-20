@@ -461,7 +461,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     mask_model.eval()
     BATCH_SIZE = 0
     predic = []
-    df = pd.dataframe(columns=['name', 'x1', 'x2', 'y1', 'y2', 'classname'])
+    df = pd.DataFrame(columns=['name', 'x1', 'x2', 'y1', 'y2', 'classname'])
     #################################
     if showImage:
         #try:
