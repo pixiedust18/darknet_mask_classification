@@ -571,7 +571,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 i+=1
                 
                 op = {
-                    "name": imagePath,
+                    "name": imagePath.split('/')[-1],
                     "x1": x,
                     "x2" : (x+w),
                     "y1" : y,
