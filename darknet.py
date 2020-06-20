@@ -464,7 +464,7 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     df = pd.DataFrame(columns=['name', 'x1', 'x2', 'y1', 'y2', 'classname'])
     #################################
     if showImage:
-        #try:
+        try:
             from skimage import io, draw
             import numpy as np
             image = io.imread(imagePath)
@@ -615,8 +615,8 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 "caption": "\n<br/>".join(imcaption)
             }'''
             
-        #except Exception as e:
-        #    print("Unable to show image: "+str(e))
+        except Exception as e:
+            print("Unable to show image: "+str(e))
     return df
 
 def performBatchDetect(thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath = "yolov4.weights", metaPath= "./cfg/coco.data", hier_thresh=.5, nms=.45, batch_size=3):
