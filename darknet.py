@@ -1,77 +1,42 @@
 #!python3
 """
 Python 3 wrapper for identifying objects in images
+
 Requires DLL compilation
+
 Both the GPU and no-GPU version should be compiled; the no-GPU version should be renamed "yolo_cpp_dll_nogpu.dll".
+
 On a GPU system, you can force CPU evaluation by any of:
+
 - Set global variable DARKNET_FORCE_CPU to True
 - Set environment variable CUDA_VISIBLE_DEVICES to -1
 - Set environment variable "FORCE_CPU" to "true"
+
+
 To use, either run performDetect() after import, or modify the end of this file.
+
 See the docstring of performDetect() for parameters.
+
 Directly viewing or returning bounding-boxed images requires scikit-image to be installed (`pip install scikit-image`)
+
+
 Original *nix 2.7: https://github.com/pjreddie/darknet/blob/0f110834f4e18b30d5f101bf8f1724c34b7b83db/python/darknet.py
 Windows Python 2.7 version: https://github.com/AlexeyAB/darknet/blob/fc496d52bf22a0bb257300d3c79be9cd80e722cb/build/darknet/x64/darknet.py
+
 @author: Philip Kahn
 @date: 20180503
 """
 #pylint: disable=R, W0401, W0614, W0703
 from ctypes import *
-import matplotlib.pyplot as plt
-from PIL import Image
-import cv2
 import math
 import random
 import os
 import numpy as np
-import torch
-import torch.nn.functional as F
-import torch.nn as nn
-import torch.optim as optim
-import torchvision.models as models
-import torchvision.transforms as transforms
-import torchvision.datasets as datasets
-from torch.utils.data import TensorDataset, DataLoader
-import torch.utils.data as data
-import matplotlib.pyplot as plt
+from skimage import io, draw
+import cv2
+from scipy.spatial import distance
 
-mask_model = models.resnet50(pretrained=True)
-mask_model.fc = torch.nn.Sequential(torch.nn.Linear(2048, 1024),
-                                 torch.nn.BatchNorm1d(1024),
-                                 torch.nn.ReLU(),
-                                 torch.nn.Dropout(0.2),
-                                 torch.nn.Linear(1024, 512),
-                                 torch.nn.BatchNorm1d(512),
-                                 torch.nn.Dropout(0.6),
-                                 torch.nn.Linear(512, 2),
-                                 torch.nn.LogSoftmax(dim=1))
 
-train_transforms = transforms.Compose([
-    transforms.Resize((256, 256)),
-    transforms.ToTensor(),
-    transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))
-    ])
-###################################################
-class Image_Dataset(data.Dataset):
-    
-    def __init__(self, image_list, transform=None):    
-        self.image_list = image_list
-        self.transform = transform
-        
-    def __len__(self):
-        return len(self.image_list)
-    
-    def __getitem__(self, idx):
-        image = self.image_list[idx]
-        pil_image = Image.fromarray(image, mode = "RGB")
-        img_transformed = self.transform(pil_image)
-
-        return img_transformed
-####################################################
-
-def load_mask_wt(path = '/content/drive/My Drive/equalaf4.pth'):
-    mask_model.load_state_dict(torch.load(path))
-    
 def sample(probs):
     s = sum(probs)
     probs = [a/s for a in probs]
@@ -262,7 +227,6 @@ network_predict_batch.argtypes = [c_void_p, IMAGE, c_int, c_int, c_int,
 network_predict_batch.restype = POINTER(DETNUMPAIR)
 
 def array_to_image(arr):
-    import numpy as np
     # need to return old values to avoid python freeing memory
     arr = arr.transpose(2,0,1)
     c = arr.shape[0]
@@ -311,7 +275,6 @@ def detect_image(net, meta, im, thresh=.5, hier_thresh=.5, nms=.45, debug= False
     if debug: print("Assigned pnum")
     predict_image(net, im)
     letter_box = 0
-    
     #predict_image_letterbox(net, im)
     #letter_box = 1
     if debug: print("did prediction")
@@ -354,33 +317,61 @@ netMain = None
 metaMain = None
 altNames = None
 
-def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath = "yolov4.weights", metaPath= "./cfg/coco.data", showImage= True, makeImageOnly = False, initOnly= False, mask_present_label = True, mask_path = '/content/drive/My Drive/equalaf4.pth'):
+def check(p1, p2):
+    x1, y1 = p1[0], p1[1]
+    x2, y2 = p2[0], p2[1]
+    x = [x1, x2]
+    y = [y1, y2]
+
+    social_distance = distance.cdist(x, y, 'euclidean')
+    param = (x1+x2)/2
+
+    if(social_distance > 0 and social_distance < 0.25 * param):
+        return False
+    
+    return True
+
+
+def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath = "yolov4.weights", metaPath= "./cfg/coco.data", showImage= True, makeImageOnly = False, initOnly= False):
     """
     Convenience function to handle the detection and returns of objects.
+
     Displaying bounding boxes requires libraries scikit-image and numpy
+
     Parameters
     ----------------
     imagePath: str
         Path to the image to evaluate. Raises ValueError if not found
+
     thresh: float (default= 0.25)
         The detection threshold
+
     configPath: str
         Path to the configuration file. Raises ValueError if not found
+
     weightPath: str
         Path to the weights file. Raises ValueError if not found
+
     metaPath: str
         Path to the data file. Raises ValueError if not found
+
     showImage: bool (default= True)
         Compute (and show) bounding boxes. Changes return.
+
     makeImageOnly: bool (default= False)
         If showImage is True, this won't actually *show* the image, but will create the array and return it.
+
     initOnly: bool (default= False)
         Only initialize globals. Don't actually run a prediction.
+
     Returns
     ----------------------
+
+
     When showImage is False, list of tuples like
         ('obj_label', confidence, (bounding_box_x_px, bounding_box_y_px, bounding_box_width_px, bounding_box_height_px))
         The X and Y coordinates are from the center of the bounding box. Subtract half the width or height to get the lower corner.
+
     Otherwise, a dict with
         {
             "detections": as above
@@ -428,31 +419,21 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
     if not os.path.exists(imagePath):
         raise ValueError("Invalid image path `"+os.path.abspath(imagePath)+"`")
     # Do the detection
-    print("detect_image called")
     #detections = detect(netMain, metaMain, imagePath, thresh)	# if is used cv2.imread(image)
+
     detections = detect(netMain, metaMain, imagePath.encode("ascii"), thresh)
-    #################################
-    import pandas as pd
-    load_mask_wt(mask_path)
-    mask_model.eval()
-    BATCH_SIZE = 0
-    predic = []
-    df = pd.DataFrame(columns=['name', 'x1', 'x2', 'y1', 'y2', 'classname'])
-    #################################
     if showImage:
-        try:
-            from skimage import io, draw
-            import numpy as np
+        try:            
             image = io.imread(imagePath)
             print("*** "+str(len(detections))+" Results, color coded by confidence ***")
             imcaption = []
-            result = []
+            face_mids = []
+            xywh = []
             for detection in detections:
                 label = detection[0]
                 confidence = detection[1]
                 pstring = label+": "+str(np.rint(100 * confidence))+"%"
                 imcaption.append(pstring)
-                print(BATCH_SIZE)
                 print(pstring)
                 bounds = detection[2]
                 shape = image.shape
@@ -461,144 +442,89 @@ def performDetect(imagePath="data/dog.jpg", thresh= 0.25, configPath = "./cfg/yo
                 # y = shape[0]
                 # yExtent = int(y * bounds[3] / 100)
                 yExtent = int(bounds[3])
-                xEntent = int(bounds[2])
+                xExtent = int(bounds[2])
+
+ 
                 # Coordinates are around the center
                 xCoord = int(bounds[0] - bounds[2]/2)
                 yCoord = int(bounds[1] - bounds[3]/2)
-                
-                #changed ###########################################
+
+                x, y, w, h = xCoord, yCoord, int(bounds[2]), int(bounds[3])
+                coord = [x, y, w, h]
+                x_mid, y_mid = bounds[0], bounds[1]
+                mid_coord = (x_mid, y_mid)
+                face_mids.append(mid_coord)
+                xywh.append(coord)
+                boundingBox = [
+                    [xCoord, yCoord],
+                    [xCoord, yCoord + yExtent],
+                    [xCoord + xExtent, yCoord + yExtent],
+                    [xCoord + xExtent, yCoord]
+                ]
                 font_scale = 0.35
                 thickness = 1
                 blue = (0,0,255)
                 green = (0,255,0)
                 red = (255,0,0)
                 font=cv2.FONT_HERSHEY_COMPLEX
-              
-    
-                x, y, w, h = xCoord, yCoord, int(bounds[2]), int(bounds[3])
-                print(x, y, w, h)
-                if(x<0):
-                  x=0
-                if(y<0):
-                  y=0
-                detect_mask_img = image
-                detect_mask_img = detect_mask_img[y:y+h, x:x+w]
-                #pil_image = Image.fromarray(detect_mask_img, mode = "RGB")
-                #pil_image = train_transforms(pil_image)
-                #img = pil_image.unsqueeze(0)
-                result.append(detect_mask_img)
-                BATCH_SIZE += 1
-                predic.append(0)
-               
-            #---------------------------------------------
-            
-            comp = Image_Dataset(result, transform=train_transforms)
-            test_loader = torch.utils.data.DataLoader(comp,
-                                          batch_size=BATCH_SIZE,
-                                          shuffle=False)
-            print("accessing mask model")
-            prediction_list = []
-            with torch.no_grad():
-                print("load tl")
-                for X in test_loader:
-                    #X = X.cuda()
-                    print("make prediction")
-                    result = mask_model(X)
-                    _, maximum = torch.max(result.data, 1)
-                    print(maximum.tolist())
-                    prediction_list = maximum.tolist()
-                    
-                            
-                print("predictions: ", prediction_list)
-            #----------------------------------------------------    
-            i=0
-            for detection in detections:
-                label = detection[0]
-                confidence = detection[1]
-                pstring = label+": "+str(np.rint(100 * confidence))+"%"
-                imcaption.append(pstring)
-                print(pstring)
-                bounds = detection[2]
-                shape = image.shape
-                # x = shape[1]
-                # xExtent = int(x * bounds[2] / 100)
-                # y = shape[0]
-                # yExtent = int(y * bounds[3] / 100)
-                yExtent = int(bounds[3])
-                xEntent = int(bounds[2])
-                # Coordinates are around the center
-                xCoord = int(bounds[0] - bounds[2]/2)
-                yCoord = int(bounds[1] - bounds[3]/2)
-                x, y, w, h = xCoord, yCoord, int(bounds[2]), int(bounds[3])
-
-                prediction = prediction_list[i]
-                print("processing prediction")
-                if prediction == 0:
-                  if mask_present_label == True:
-                    cv2.putText(image, "No Mask", (x,y - 10), font, font_scale, red, thickness)
-                    print("Label print", mask_present_label)
-                  else:
-                    print("Label print", mask_present_label)
-                  print("No mask")
-                  boxColor = red
-                elif prediction == 1:
-                  if mask_present_label == True:
-                    cv2.putText(image, "Masked", (x,y - 10), font, font_scale, green, thickness)
-                    print("Label print", mask_present_label)
-                  else:
-                    print("Label print", mask_present_label)
-                  print("Mask")
-                  boxColor = green
-                i+=1
-                
-                op = {
-                    "name": imagePath.split('/')[-1],
-                    "x1": x,
-                    "x2" : (x+w),
-                    "y1" : y,
-                    "y2" : (y+h),
-                    "classname" : prediction
-                }
-                op = pd.Series(op)
-                df = df.append(op, ignore_index=True)
-                ####################################################
-             
-                boundingBox = [
-                    [xCoord, yCoord],
-                    [xCoord, yCoord + yExtent],
-                    [xCoord + xEntent, yCoord + yExtent],
-                    [xCoord + xEntent, yCoord]
-                ]
                 # Wiggle it around to make a 3px border
                 rr, cc = draw.polygon_perimeter([x[1] for x in boundingBox], [x[0] for x in boundingBox], shape= shape)
                 rr2, cc2 = draw.polygon_perimeter([x[1] + 1 for x in boundingBox], [x[0] for x in boundingBox], shape= shape)
                 rr3, cc3 = draw.polygon_perimeter([x[1] - 1 for x in boundingBox], [x[0] for x in boundingBox], shape= shape)
                 rr4, cc4 = draw.polygon_perimeter([x[1] for x in boundingBox], [x[0] + 1 for x in boundingBox], shape= shape)
                 rr5, cc5 = draw.polygon_perimeter([x[1] for x in boundingBox], [x[0] - 1 for x in boundingBox], shape= shape)
+
+                if (label=='Mask'):
+                    boxColor = green
+                    cv2.putText(image, "Mask", (x,y - 10), font, font_scale, green, thickness)
+                elif (label=='No_mask'):
+                    boxColor = red
+                    cv2.putText(image, "No Mask", (x,y - 10), font, font_scale, red, thickness)
+
                 #boxColor = (int(255 * (1 - (confidence ** 2))), int(255 * (confidence ** 2)), 0)
                 draw.set_color(image, (rr, cc), boxColor, alpha= 0.8)
                 draw.set_color(image, (rr2, cc2), boxColor, alpha= 0.8)
                 draw.set_color(image, (rr3, cc3), boxColor, alpha= 0.8)
                 draw.set_color(image, (rr4, cc4), boxColor, alpha= 0.8)
                 draw.set_color(image, (rr5, cc5), boxColor, alpha= 0.8)
+
+
+            
+            #correct_peeps = []
+            #wrong_peeps = []
+            sd_main = []
+            for mid1 in face_mids:
+                for mid2 in face_mids:
+                    sd = check(mid1, mid2)
+                    sd_main.append(sd)
+
+            i = 0
+            for coord in xywh:
+                x, y, w, h = coord
+
+                if (sd_main[i] == True):  
+                    cv2.rectangle(image, (x, y), (x + w, y + h + 50), (0, 0, 150), 2)
+                    cv2.putText(image, "SD", (x,y - 10), font, font_scale, (0, 0, 150), thickness)
+                else:  
+                    cv2.rectangle(image, (x, y), (x + w, y + h + 50), (0, 150, 150), 2)
+                    cv2.putText(image, "No SD", (x,y - 10), font, font_scale, (0, 150, 150), thickness)
+                i+=1
+
+
             if not makeImageOnly:
-                io.imsave(fname="/content/drive/My Drive/result.jpg", arr=image)
                 io.imshow(image)
                 io.show()
-            '''detections = {
+            detections = {
                 "detections": detections,
                 "image": image,
                 "caption": "\n<br/>".join(imcaption)
-            }'''
-            
+            }
         except Exception as e:
             print("Unable to show image: "+str(e))
-    return df
+    return detections
 
 def performBatchDetect(thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath = "yolov4.weights", metaPath= "./cfg/coco.data", hier_thresh=.5, nms=.45, batch_size=3):
-    import cv2
     import numpy as np
-    print("batch_detect_image called")
     # NB! Image sizes should be the same
     # You can change the images, yet, be sure that they have the same width and height
     img_samples = ['data/person.jpg', 'data/person.jpg', 'data/person.jpg']
@@ -662,7 +588,6 @@ def performBatchDetect(thresh= 0.25, configPath = "./cfg/yolov4.cfg", weightPath
     return batch_boxes, batch_scores, batch_classes    
 
 if __name__ == "__main__":
-    df = (performDetect())
-    print(df)
+    print(performDetect())
     #Uncomment the following line to see batch inference working 
     #print(performBatchDetect())
